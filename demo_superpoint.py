@@ -495,7 +495,10 @@ class VideoStreamer(object):
     self.camera = False
     self.video_file = False
     self.listing = []
-    self.sizer = [height, width]
+    if height is not None and width is not None:
+      self.sizer = [height, width]
+    else:
+      self.sizer = None
     self.i = 0
     self.skip = skip
     self.maxlen = 1000000
@@ -525,6 +528,7 @@ class VideoStreamer(object):
         self.listing = glob.glob(search)
         self.listing.sort()
         self.listing = self.listing[::self.skip]
+        print(self.listing)
         self.maxlen = len(self.listing)
         if self.maxlen == 0:
           raise IOError('No images were found (maybe bad \'--img_glob\' parameter?)')
@@ -542,7 +546,8 @@ class VideoStreamer(object):
       raise Exception('Error reading image %s' % impath)
     # Image is resized via opencv.
     interp = cv2.INTER_AREA
-    grayim = cv2.resize(grayim, (img_size[1], img_size[0]), interpolation=interp)
+    if img_size is not None:
+      grayim = cv2.resize(grayim, (img_size[1], img_size[0]), interpolation=interp)
     grayim = (grayim.astype('float32') / 255.)
     return grayim
 
@@ -561,8 +566,9 @@ class VideoStreamer(object):
         return (None, False)
       if self.video_file:
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, self.listing[self.i])
-      input_image = cv2.resize(input_image, (self.sizer[1], self.sizer[0]),
-                               interpolation=cv2.INTER_AREA)
+      if self.sizer is not None:
+        input_image = cv2.resize(input_image, (self.sizer[1], self.sizer[0]),
+                                 interpolation=cv2.INTER_AREA)
       input_image = cv2.cvtColor(input_image, cv2.COLOR_RGB2GRAY)
       input_image = input_image.astype('float')/255.0
     else:
